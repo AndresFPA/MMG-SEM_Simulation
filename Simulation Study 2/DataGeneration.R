@@ -22,7 +22,25 @@ library(matrixcalc)
 #'
 #' OUTPUT
 #' @return SimData: generated data
-#' 
+#' @return NonInvIdx: Index of the groups that presented the non-invariant loadings 
+#' @return psi_g: generated psi matrix
+#' @return OrTheta: generated theta matrix
+#' @return cov_eta: generated cov_eta matrix (phi in the paper)
+
+# Note:
+# In the code, we use exog and endog to name the latent variables, while in the paper we use F1, F2, ..., etc.
+# The corresponding matches are:
+# F1 = exog2
+# F2 = exog1
+# F3 = endog1
+# F4 = endog2
+
+# Note 2:
+# To ease the reading of the code, the names of the regression parameters can be seen below:
+#   # exog1 -> endog2 = B1
+#   # exog1 -> endog1 = B2
+#   # endog1 -> endog2 = B3
+#   # endog1 -> endog2 = B4
 
 
 DataGeneration <- function(model, nclus, ngroups, N_g,
@@ -50,10 +68,6 @@ DataGeneration <- function(model, nclus, ngroups, N_g,
   lat_var <- c(exog, endog)
   
   # Give names to the regression parameters (only for better understanding):
-  #   # exog1 -> endog2 = B1
-  #   # exog1 -> endog1 = B2
-  #   # endog1 -> endog2 = B3
-  #   # endog1 -> endog2 = B4
   B1 <- numeric(nclus)
   B2 <- numeric(nclus)
   B3 <- numeric(nclus)
