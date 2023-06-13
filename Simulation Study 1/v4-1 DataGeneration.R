@@ -22,8 +22,23 @@ library(matrixcalc)
 #'
 #' OUTPUT
 #' @return SimData: generated data
+#' @return exog_vars: generated variance of the variables
+#' @return exog_cov: generated covariance between exogenous variables
+#' @return endo_vars: generated variance of the endogenous variables
+#' @return Theta: generated theta matrix
+#' @return NonInvIdx: Index of the groups that presented the non-invariant loadings
 #' 
 
+# Note:
+# In the code, we use exog and endog to name the latent variables, while in the paper we use F1, F2, ..., etc.
+# The corresponding matches are:
+# F1 = exog2
+# F2 = exog1
+# F3 = endog1
+# F4 = endog2
+
+# Note 2:
+# To ease the reading of the code, the names of the regression parameters can be seen below:
 #   # exog1 -> endog2 = B1
 #   # exog1 -> endog1 = B2
 #   # endog1 -> endog2 = B3
@@ -55,10 +70,6 @@ DataGeneration <- function(model, nclus, ngroups, N_g,
   lat_var <- c(exog, endog)
   
   # Give names to the regression parameters (only for better understanding):
-  #   # exog1 -> endog2 = B1
-  #   # exog1 -> endog1 = B2
-  #   # endog1 -> endog2 = B3
-  #   # endog1 -> endog2 = B4
   B1 <- numeric(nclus)
   B2 <- numeric(nclus)
   B3 <- numeric(nclus)
@@ -90,44 +101,12 @@ DataGeneration <- function(model, nclus, ngroups, N_g,
     B3[4] <- reg_coeff
     B4[4] <- 0
   }
-  
-  # Define parameters for cluster 1 (base cluster)
-  # Initialize lambda, beta, and psi
-  # Lambda (depends on reliability lvl)
-  if (reliability == "low"){
-    load <- .4
-  } else if (reliability == "high"){
-    load <- .6
-  }
-  
-  loadings <- sqrt(load)
-  
-  # Non-invariance
-  # Create Invariant Lambda
-  Lambda <- matrix(data = rep(x = c(1, rep(loadings, 4), rep(0, p)), times = m)[1:(p*m)], nrow = p, ncol = m)
 
-  # How many items are affected?
-  # Size of the non-invariance (NonInvSize) - Number of items affected (NonInvItems)
-  # Create non-invariant lambda
-  LambdaNonInv <- matrix(data = rep(x = c(1, 
-                                          (loadings - NonInvSize), 
-                                          (loadings + NonInvSize), 
-                                          rep(loadings, (4 - NonInvItems)), 
-                                          rep(0, p)), times = m)[1:(p*m)], nrow = p, ncol = m)
-  
-  # May be useful in the future
-  # LambdaNonInv <- matrix(data = c(1, rep((loadings - NonInvSize), NonInvItems), rep(loadings, (4 - NonInvItems)), rep(0, p), 
-  #                                 1, rep((loadings - NonInvSize), NonInvItems), rep(loadings, (4 - NonInvItems)), rep(0, p), 
-  #                                 1, rep((loadings - NonInvSize), NonInvItems), rep(loadings, (4 - NonInvItems))), nrow = p, ncol = m)
-
-  
+  # Generate the structural parameters
+  # BETA - Regression parameters
   # beta is cluster-specific. Only nclus matrices needed
   beta <- array(data = 0, dim = c(m, m, nclus), dimnames = list(lat_var, lat_var))
   colnames(beta) <- rownames(beta) <- lat_var
-  
-  # psi is group- and cluster-specific. ngroups matrices are needed.
-  # First, let's define the cluster-specific part
-  psi_k <- array(data = diag(m), dim = c(m, m, nclus), dimnames = list(lat_var, lat_var))
   
   # Initialize
   for(k in 1:nclus){
@@ -136,33 +115,27 @@ DataGeneration <- function(model, nclus, ngroups, N_g,
     beta[endog1, exog[1], k] <- B2[k]
     beta[endog1, exog[2], k] <- B3[k]
     beta[endog2, endog1, k] <- B4[k]
-    
-    # #psi
-    # psi_k[endog1, endog1, k] <- 1 - ((B2[k] + B3[k])^2)
-    # psi_k[endog2, endog2, k] <- 1 - ((B1[k] + B4[k])^2)
-    
-    # psi_k[endog1, endog1, k] <- runif(1)
-    # psi_k[endog2, endog2, k] <- runif(1)
   }
   
-  # Now, let's define the group-specific part
-  # Manipulate variance any way you like
+  # psi is group- and cluster-specific. ngroups matrices are needed.
+  # Generate enough psi matrices
+  psi_g <- array(data = diag(m), dim = c(m, m, ngroups), dimnames = list(lat_var, lat_var))
+  
+  # Generate group-specific values for psi sampling from uniform distributions
   if (randomVarX == T){
     exog_var1 <- runif(n = ngroups, min = 0.75, max = 1.25)
     exog_var2 <- runif(n = ngroups, min = 0.75, max = 1.25)
     exog_cov <- runif(n = ngroups, min = -0.30, max = 0.30)
-    endo_var1 <- runif(n = ngroups, min = 0.75, max = 1.25)
-    endo_var2 <- runif(n = ngroups, min = 0.75, max = 1.25)
-  } else {
+    endo_var1 <- runif(n = ngroups, min = 0.75, max = 1.25) # Total endogenous variance
+    endo_var2 <- runif(n = ngroups, min = 0.75, max = 1.25) # Total endogenous variance
+  } else { # DEPRECATED
     exog_var1 <- rep(1, times = ngroups) 
     exog_var2 <- rep(1, times = ngroups) 
     exog_cov <- rep(1, times = ngroups) 
   }
   
-  # Generate enough psi matrices
-  psi_g <- array(data = diag(m), dim = c(m, m, ngroups), dimnames = list(lat_var, lat_var))
-  
   # Get a cluster label for each group (GperK)
+  # Example: If balanced, G = 6, K = 2. GperK = 111222
   if (balance == "balanced"){
     GperK <- rep(x = 1:nclus, each = (ngroups/nclus))
   } else if (balance == "unbalanced"){
@@ -172,12 +145,13 @@ DataGeneration <- function(model, nclus, ngroups, N_g,
   
   # Insert the corresponding group- and cluster-specific parts of psi
   for(g in 1:ngroups){
-    psi_g[, , g] <- psi_k[, , GperK[g]] # Cluster-specific
+    # Insert group-specific parts
     psi_g[exog[1], exog[1], g] <- exog_var1[g] # Group-specific
     psi_g[exog[2], exog[2], g] <- exog_var2[g] # Group-specific
     psi_g[exog[1], exog[2], g] <- exog_cov[g] # Group-specific
     psi_g[exog[2], exog[1], g] <- exog_cov[g] # Group-specific
     
+    # Insert the group-and-cluster-specific parts (they use the cluster-specific betas)
     # For the endogenous part, start from the total var (endog_var) and subtract the explained by the regression
     psi_g[endog1, endog1, g] <- endo_var1[g] - ((B2[GperK[g]]^2 * exog_var1[g]) + 
                                                 (B3[GperK[g]]^2 * exog_var2[g]) + 
@@ -188,7 +162,7 @@ DataGeneration <- function(model, nclus, ngroups, N_g,
                                                 (2 * B1[GperK[g]] * B4[GperK[g]] * ((B2[GperK[g]] * exog_var1[g]) + (B3[GperK[g]] * exog_cov[g])))) # Group-specific
   }
   
-  # Create cov matrix as: ----
+  # Create the covariance matrix of the factors (phi in the paper)
   I <- diag(m) # Identity matrix
   cov_eta <- array(data = 0, dim = c(m, m, ngroups), dimnames = list(lat_var, lat_var))
   # browser()
@@ -226,6 +200,24 @@ DataGeneration <- function(model, nclus, ngroups, N_g,
   #   }
   #   # print(is.positive.definite(cov_eta[, , g]))
   # }
+  
+  # Generate the measurement model parameters
+  # Lambda (depends on reliability lvl)
+  if (reliability == "low"){load <- .4} else if (reliability == "high"){load <- .6}
+  loadings <- sqrt(load)
+  
+  # Non-invariance
+  # Create Invariant Lambda
+  Lambda <- matrix(data = rep(x = c(1, rep(loadings, 4), rep(0, p)), times = m)[1:(p*m)], nrow = p, ncol = m)
+  
+  # How many items are affected?
+  # Size of the non-invariance (NonInvSize) - Number of items affected (NonInvItems)
+  # Create non-invariant lambda
+  LambdaNonInv <- matrix(data = rep(x = c(1, 
+                                          (loadings - NonInvSize), 
+                                          (loadings + NonInvSize), 
+                                          rep(loadings, (4 - NonInvItems)), 
+                                          rep(0, p)), times = m)[1:(p*m)], nrow = p, ncol = m)
   
   # Generate Theta per group depending on reliability
   Theta <- array(data = 0, dim = c(p, p, ngroups))
