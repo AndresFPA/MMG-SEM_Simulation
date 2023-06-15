@@ -126,13 +126,13 @@ CairoPNG(filename = "C:/Users/perezalo/OneDrive - Tilburg University/First paper
 CairoPNG(filename = "C:/Users/User/OneDrive - Tilburg University/First paper/ParSim2.png", width = 650, height = 650)
 
 ggplot(for_plots_long, aes(x = N_g, y = RMSE, linetype = NonInvType)) + 
-  geom_line(size = 1) + 
+  geom_line(size = 1, color = "darkcyan") + 
   facet_grid(coeff ~ NonInvIncl) + labs(x = "Within-group Sample Size", y = "Root Mean Squared Error (RMSE)") + 
   scale_x_continuous(sec.axis = sec_axis(~ . , name = "Model Specification", breaks = NULL, labels = NULL)) + 
   theme_bw() + theme(text=element_text(size=12), legend.position = "bottom", plot.title = element_text(hjust = 0.5)) + 
   scale_linetype_manual("Non-inv Type", values = c(1, 2), labels = c("Fixed", "Random")) +
   scale_y_continuous(sec.axis = sec_axis(~ . , name = "Regression Parameters", breaks = NULL, labels = NULL)) +
-  ggtitle(label = "Parameter Recovery") + geom_point()
+  ggtitle(label = "Parameter Recovery") + geom_point(color = "darkcyan")
 
 dev.off()
 
