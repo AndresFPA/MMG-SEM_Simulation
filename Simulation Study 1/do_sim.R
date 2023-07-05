@@ -7,7 +7,7 @@ setwd("C:/Users/perezalo/OneDrive - Tilburg University/R/Simulation first paper/
 # Source the relevant functions
 source("MMGSEM.R")
 source("E_Step.R")
-source("v4-1 DataGeneration.R")
+source("DataGeneration.R")
 source("evaluation.R")
 
 # If we want to use the completely non-iterative model

@@ -6,7 +6,7 @@ setwd("E:/OneDrive - Tilburg University/R/Simulation first paper/Final/Measureme
 setwd("C:/Users/perezalo/OneDrive - Tilburg University/R/Simulation first paper/Final/Measurement model")
 
 # Source the relevant functions
-source("v4-1 DataGeneration.R")
+source("DataGeneration.R")
 source("evaluation.R")
 
 # If we want to use the completely non-iterative model
