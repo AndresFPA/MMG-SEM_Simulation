@@ -41,7 +41,7 @@ library(matrixcalc)
 # To ease the reading of the code, the names of the regression parameters can be seen below:
 #   # exog1 -> endog2 = B1
 #   # exog1 -> endog1 = B2
-#   # endog1 -> endog2 = B3
+#   # exog2 -> endog1 = B3
 #   # endog1 -> endog2 = B4
 
 
